@@ -1,6 +1,10 @@
 import fs from "fs";
 
-const map = fs.readFileSync("./test.txt", "utf-8").split("\n").map(line => line.split(""));
+// const map = fs.readFileSync("./test.txt", "utf-8").split("\n").map(line => line.split(""));
+const map = fs.readFileSync("./input.txt", "utf-8").split("\n").map(line => line.split(""));
+
+// function: locateStartPosition
+// need to figure out the position of starting hex, looks like it is "^"
 
 // function: move
 // if next move exceeds row / column, guard has exitted the map
@@ -24,48 +28,96 @@ const map = fs.readFileSync("./test.txt", "utf-8").split("\n").map(line => line.
 
 // finally, count the number of "x"
 
-// TODO: is there a way for this to exist only inside of run()?
-const rows = map.length;
-const cols = map[0].length;
+const locateCurrentPosition = (map) => {
+  let coordinate;
 
-const checkForExit = (currPosition) => {
-  // TODO: needs to know current direction facing
-  // this will determine if y + 1 (down), y - 1 (up), x + 1 (right), x - 1 (left)
+  map.forEach((row, idx) => {
+    let pos = row.indexOf("^");
 
-  // TODO: needs to know current position somehow, to be passed as a variable?
-  const currRow = currPosition[0];
-  const currCol = currPosition[1];
+    if (pos >= 0) {
+      coordinate = [idx, pos];
+      return;
+    };
+  });
+
+  return coordinate;
+};
+
+const checkCellAhead = (currPosition, direction, map) => {
+  let nextCell;
+  let y = currPosition[0];
+  let x = currPosition[1];
 
   switch (direction) {
     case "^":
+      if (map[y - 1] === undefined) return undefined;
+      nextCell = map[y - 1][x];
       break;
     case ">":
+      nextCell = map[y][x + 1];
       break;
     case "v":
+      if (map[y + 1] === undefined) return undefined;
+      nextCell = map[y + 1][x];
       break;
     case "<":
+      nextCell = map[y][x - 1];
       break;
-  }
-};
+  };
 
+  return nextCell;
+};
 
 const run = (map) => {
+  let currPosition = locateCurrentPosition(map);
+  let direction = "^";
 
-  // TODO: To change this to be dynamic
-  const currPosition = [9, 9]
+  while (true) {
+    let nextCell = checkCellAhead(currPosition, direction, map);
+    let [y, x] = currPosition;
 
-  // console.log(rows, cols);
-
-  // if the next step causes guard to leave the area (outside the array), exit run()
-  if (checkForExit(currPosition)) return;
-
-  // if there is an obstacle ahead (#), turn to the right, then start from beginning
-  if (checkForObstacle()) {
-    rotate90DegreesRight();
-  } else {
-    // otherwise, move to the next hex
-    moveStraight();
+    // if the next step causes guard to leave the area (outside the array),
+    switch (nextCell) {
+      case ".":
+      case "x":
+        map[currPosition[0]][currPosition[1]] = "x";
+        switch (direction) {
+          case "^":
+            currPosition = [y - 1, x]
+            break;
+          case ">":
+            currPosition = [y, x + 1]
+            break;
+          case "v":
+            currPosition = [y + 1, x]
+            break;
+          case "<":
+            currPosition = [y, x - 1]
+            break;
+        };
+        break;
+      case "#":
+        switch (direction) {
+          case "^":
+            direction = ">";
+            break;
+          case ">":
+            direction = "v";
+            break;
+          case "v":
+            direction = "<";
+            break;
+          case "<":
+            direction = "^";
+            break;
+        };
+        break;
+      case undefined:
+        map[currPosition[0]][currPosition[1]] = "x";
+        console.log(map.flat().filter(el => el === "x").length);
+        return;
+    };
   };
-};
+}
 
 run(map);
